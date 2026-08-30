@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { initModel, detectImage } = require('./utils/yolo');
+const { initModel, detectImage } = require('./utils/yolo.cjs');
 const fs = require('fs');
 const path = require('path');
 

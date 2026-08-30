@@ -1,18 +1,40 @@
 {
   "name": "packlabel-detector",
-  "version": "1.0.0",
   "private": true,
-  "description": "Packet label detector: React (Vite) frontend + Express/ONNX YOLOv8 API",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "vercel-build": "cd client && npm ci && npm run build",
-    "dev:server": "cd server && npm start",
-    "dev:client": "cd client && npm run dev"
+    "dev": "vite",
+    "build": "vite build",
+    "vercel-build": "vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "start": "node server/server.js",
+    "dev:server": "node server/server.js"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.24.0",
     "multer": "^2.2.0",
     "onnxruntime-node": "^1.27.0",
-    "sharp": "^0.35.3"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "sharp": "^0.35.3",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "autoprefixer": "^10.5.2",
+    "oxlint": "^1.71.0",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^4.3.2",
+    "vite": "^8.1.1"
   }
 }
