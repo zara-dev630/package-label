@@ -1,12 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/index.cjs", "use": "@vercel/node" },
-    { "src": "dist/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "api/index.cjs" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "dist/$1" }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
