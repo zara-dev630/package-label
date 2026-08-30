@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import Hero3D from './components/Hero3D';
 import UploadSection from './components/UploadSection';
 import ResultsView from './components/ResultsView';
 import StatsSection from './components/StatsSection';
 
 function App() {
+  const SAMPLE_IMAGE_URL = '/20250717_152544_jpg.rf.889b8678cc2aa64c5f318a298373cb9c.jpg';
+
   const [file, setFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [detections, setDetections] = useState(null);
@@ -52,6 +55,18 @@ function App() {
     setError(null);
   };
 
+  const handleTrySample = async () => {
+    try {
+      const resp = await fetch(SAMPLE_IMAGE_URL);
+      const blob = await resp.blob();
+      const file = new File([blob], 'sample.jpg', { type: blob.type || 'image/jpeg' });
+      handleFileUpload(file);
+    } catch (err) {
+      console.error(err);
+      setError('Could not load the sample image. Please upload your own image instead.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-white flex flex-col font-sans">
       <header className="fixed top-0 w-full z-50 bg-background border-b border-white/10">
@@ -79,6 +94,15 @@ function App() {
               <div className="pt-8">
                 <UploadSection onUpload={handleFileUpload} loading={loading} />
               </div>
+
+              <button
+                onClick={handleTrySample}
+                disabled={loading}
+                className="inline-flex items-center gap-2 mx-auto mt-6 px-6 py-3 rounded-full border border-accent-500/50 bg-accent-500/10 hover:bg-accent-500/20 text-accent-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-5 h-5" />
+                Try with a sample image
+              </button>
               
               {error && (
                 <div className="text-red-500 font-medium mt-4 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
