@@ -13,7 +13,10 @@ async function initModel() {
   if (!fs.existsSync(modelPath)) {
     throw new Error(`Model file not found at ${modelPath}`);
   }
+  const sizeMb = (fs.statSync(modelPath).size / (1024 * 1024)).toFixed(2);
+  console.log(`[yolo] Loading model from ${modelPath} (${sizeMb} MB)`);
   session = await ort.InferenceSession.create(modelPath);
+  console.log(`[yolo] Model loaded. input=${session.inputNames.join(',')} output=${session.outputNames.join(',')}`);
   return session;
 }
 
@@ -82,6 +85,7 @@ async function detectImage(imageBuffer) {
     await initModel();
   }
   
+  console.log(`[yolo] Received image buffer: ${imageBuffer.length} bytes`);
   const { tensor, origWidth, origHeight } = await prepareInput(imageBuffer);
   
   const feeds = {};
@@ -138,6 +142,17 @@ async function detectImage(imageBuffer) {
       });
     }
   }
+
+  // Diagnostics: report min/max class confidence so we can tell if the model
+  // is producing near-zero output (would indicate the model didn't load/run correctly).
+  let globalMax = 0;
+  for (let i = 0; i < numElements; i++) {
+    const conf = data[(4 + 0) * numElements + i];
+    const conf2 = data[(4 + 4) * numElements + i];
+    const m = conf > conf2 ? conf : conf2;
+    if (m > globalMax) globalMax = m;
+  }
+  console.log(`[yolo] Output dims=${output.dims ? output.dims.join('x') : 'n/a'} len=${data.length} maxClassConf=${globalMax.toFixed(4)} detections=${boxes.length}`);
   
   return nms(boxes);
 }

@@ -25,12 +25,14 @@ app.post('/api/detect', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'No image uploaded.' });
     }
 
+    console.log(`[api] Received upload: field=${req.file.fieldname} size=${req.file.size} mimetype=${req.file.mimetype} orig=${req.file.originalname}`);
     const imageBuffer = req.file.buffer;
     const detections = await detectImage(imageBuffer);
 
+    console.log(`[api] Detection complete: ${detections.length} detections`);
     res.json({ success: true, detections });
   } catch (error) {
-    console.error('Detection error:', error);
+    console.error('[api] Detection error:', error);
     res.status(500).json({ error: error.message || 'Error processing image.' });
   }
 });
