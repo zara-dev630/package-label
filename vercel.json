@@ -2,12 +2,15 @@
   "version": 2,
   "buildCommand": "npm run build",
   "builds": [
-    { "src": "api/index.cjs", "use": "@vercel/node" },
-    { "src": "dist/**", "use": "@vercel/static" }
+    {
+      "src": "api/index.cjs",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["dist/**", "server/models/best.onnx"]
+      }
+    }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "api/index.cjs" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "api/index.cjs" }
   ]
 }

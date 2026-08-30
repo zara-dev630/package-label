@@ -42,4 +42,33 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Serve the built React frontend (dist) from the same function so this single
+// serverless function hosts both the API and the static SPA. On Vercel the
+// dist/** files are bundled into the function via includeFiles.
+function resolveDistDir() {
+  const candidates = [
+    path.join(__dirname, '..', 'dist'),
+    path.join(process.cwd(), 'dist')
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || candidates[0];
+}
+
+const distDir = resolveDistDir();
+console.log(`[api] Static frontend dir: ${distDir} (exists=${fs.existsSync(distDir)})`);
+
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  // SPA fallback: any non-API GET returns index.html
+  app.use((req, res, next) => {
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return res.sendFile(path.join(distDir, 'index.html'));
+    }
+    next();
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.status(404).send('Frontend build (dist) not found. Run npm run build first.');
+  });
+}
+
 module.exports = app;

@@ -3,7 +3,14 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const modelPath = path.join(__dirname, '..', '..', 'server', 'models', 'best.onnx');
+function resolveModelPath() {
+  const candidates = [
+    path.join(__dirname, '..', '..', 'server', 'models', 'best.onnx'),
+    path.join(process.cwd(), 'server', 'models', 'best.onnx')
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || candidates[0];
+}
+const modelPath = resolveModelPath();
 let session = null;
 
 const CLASSES = ["BB", "Batch", "MFG", "RS", "TimeStamp"];
