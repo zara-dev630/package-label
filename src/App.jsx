@@ -62,9 +62,9 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-grow pt-20">
+      <main className="flex-grow pt-24">
         {!file && (
-          <section className="relative h-[80vh] flex items-center justify-center overflow-visible">
+          <section className="relative min-h-[80vh] flex items-center justify-center overflow-visible py-8">
             <div className="absolute inset-0 z-0 opacity-40">
               <Hero3D />
             </div>
