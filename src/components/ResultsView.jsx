@@ -52,22 +52,30 @@ export default function ResultsView({ imageUrl, detections, loading }) {
         let lx = bx;
         let ly = by - LABEL_HEIGHT;
 
-        if (ly < 0) ly = by + bh + 3;
+        if (ly < 0) ly = 0;
 
-        for (let i = 0; i < placed.length; i++) {
-          const o = placed[i];
-          const overlaps =
-            lx < o.x + o.w + 2 &&
-            lx + lw + 2 > o.x &&
-            ly < o.y + o.h &&
-            ly + LABEL_HEIGHT > o.y;
-          if (overlaps) {
-            ly = o.y + o.h + 2;
+        for (let iter = 0; iter < 20; iter++) {
+          let moved = false;
+
+          if (ly + LABEL_HEIGHT > by && ly < by + bh + 1) {
+            ly = by + bh + 3;
+            moved = true;
           }
-        }
 
-        if (ly + LABEL_HEIGHT > by && ly < by + bh) {
-          ly = by + bh + 3;
+          for (let i = 0; i < placed.length; i++) {
+            const o = placed[i];
+            if (
+              lx < o.x + o.w + 2 &&
+              lx + lw + 2 > o.x &&
+              ly < o.y + o.h &&
+              ly + LABEL_HEIGHT > o.y
+            ) {
+              ly = o.y + o.h + 2;
+              moved = true;
+            }
+          }
+
+          if (!moved) break;
         }
 
         lx = Math.max(0, Math.min(lx, canvas.width - lw));
