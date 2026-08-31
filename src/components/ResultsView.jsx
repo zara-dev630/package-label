@@ -50,32 +50,39 @@ export default function ResultsView({ imageUrl, detections, loading }) {
         const lw = tw + LABEL_PAD * 2;
 
         let lx = bx;
-        let ly = by - LABEL_HEIGHT;
+        let ly;
+        let insideBox = false;
 
-        if (ly < 0) ly = 0;
+        if (bh >= LABEL_HEIGHT + 4) {
+          ly = by + 1;
+          insideBox = true;
+        } else {
+          ly = by - LABEL_HEIGHT - 2;
+          if (ly < 0) ly = by + bh + 3;
 
-        for (let iter = 0; iter < 20; iter++) {
-          let moved = false;
+          for (let iter = 0; iter < 20; iter++) {
+            let moved = false;
 
-          if (ly + LABEL_HEIGHT > by && ly < by + bh + 1) {
-            ly = by + bh + 3;
-            moved = true;
-          }
-
-          for (let i = 0; i < placed.length; i++) {
-            const o = placed[i];
-            if (
-              lx < o.x + o.w + 2 &&
-              lx + lw + 2 > o.x &&
-              ly < o.y + o.h &&
-              ly + LABEL_HEIGHT > o.y
-            ) {
-              ly = o.y + o.h + 2;
+            if (ly + LABEL_HEIGHT > by && ly < by + bh + 1) {
+              ly = by + bh + 3;
               moved = true;
             }
-          }
 
-          if (!moved) break;
+            for (let i = 0; i < placed.length; i++) {
+              const o = placed[i];
+              if (
+                lx < o.x + o.w + 2 &&
+                lx + lw + 2 > o.x &&
+                ly < o.y + o.h &&
+                ly + LABEL_HEIGHT > o.y
+              ) {
+                ly = o.y + o.h + 2;
+                moved = true;
+              }
+            }
+
+            if (!moved) break;
+          }
         }
 
         lx = Math.max(0, Math.min(lx, canvas.width - lw));
