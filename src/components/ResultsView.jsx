@@ -31,13 +31,20 @@ export default function ResultsView({ imageUrl, detections, loading }) {
       const LABEL_HEIGHT = 24;
       const LABEL_PAD = 6;
       const GAP = 6;
+      const EXPAND = 8; // expand boxes on all sides to better enclose text
 
       const boxes = detections.map(det => {
         const [x1, y1, x2, y2] = det.box;
-        const bx = x1 * scaleX;
-        const by = y1 * scaleY;
-        const bw = (x2 - x1) * scaleX;
-        const bh = (y2 - y1) * scaleY;
+        let bx = x1 * scaleX;
+        let by = y1 * scaleY;
+        let bw = (x2 - x1) * scaleX;
+        let bh = (y2 - y1) * scaleY;
+        const expX = EXPAND * scaleX;
+        const expY = EXPAND * scaleY;
+        bx = Math.max(0, bx - expX);
+        by = Math.max(0, by - expY);
+        bw = bw + 2 * expX;
+        bh = bh + 2 * expY;
         const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
         ctx.font = 'bold 14px sans-serif';
         const tw = ctx.measureText(text).width;
