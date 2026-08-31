@@ -28,120 +28,16 @@ export default function ResultsView({ imageUrl, detections, loading }) {
       const scaleX = width / naturalWidth;
       const scaleY = height / naturalHeight;
 
-      const LABEL_HEIGHT = 24;
-      const LABEL_PAD = 6;
-      const GAP = 6;
-      const EXPAND = 8; // expand boxes on all sides to better enclose text
-
-      const boxes = detections.map(det => {
+      detections.forEach(det => {
         const [x1, y1, x2, y2] = det.box;
-        let bx = x1 * scaleX;
-        let by = y1 * scaleY;
-        let bw = (x2 - x1) * scaleX;
-        let bh = (y2 - y1) * scaleY;
-        const expX = EXPAND * scaleX;
-        const expY = EXPAND * scaleY;
-        bx = Math.max(0, bx - expX);
-        by = Math.max(0, by - expY);
-        bw = bw + 2 * expX;
-        bh = bh + 2 * expY;
-        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
-        ctx.font = 'bold 14px sans-serif';
-        const tw = ctx.measureText(text).width;
-        const lw = tw + LABEL_PAD * 2;
-        return { bx, by, bw, bh, text, lw };
-      });
-
-      const placed = [];
-
-      const overlapsAnyBox = (x, y, w, h) =>
-        boxes.some(b =>
-          x < b.bx + b.bw && x + w > b.bx &&
-          y < b.by + b.bh && y + h > b.by
-        );
-
-      const overlapsAnyLabel = (x, y, w, h) =>
-        placed.some(o =>
-          x < o.x + o.w + LABEL_PAD && x + w + LABEL_PAD > o.x &&
-          y < o.y + o.h && y + LABEL_HEIGHT > o.y
-        );
-
-      boxes.forEach(b => {
-        const { bx, by, bw, bh, text, lw } = b;
+        const bx = x1 * scaleX;
+        const by = y1 * scaleY;
+        const bw = (x2 - x1) * scaleX;
+        const bh = (y2 - y1) * scaleY;
 
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
         ctx.strokeRect(bx, by, bw, bh);
-
-        let lx = bx;
-        let ly;
-        let chosen = null;
-
-        const cands = [
-          { ly: by - LABEL_HEIGHT - GAP },
-          { ly: by + bh + GAP },
-        ];
-        // Also try sliding within the gap above/below, plus global clear bands
-        for (let n = 1; n <= 6; n++) {
-          cands.push({ ly: by - GAP - LABEL_HEIGHT - n * (LABEL_HEIGHT + 2), offset: -n });
-          cands.push({ ly: by + bh + GAP + n * (LABEL_HEIGHT + 2), offset: n });
-        }
-        // Global cleared bands: stack in the top clear zone or bottom clear zone
-        const topClear = 0;
-        const bottomClear = canvas.height - LABEL_HEIGHT * boxes.length;
-        cands.push({ ly: topClear, band: 'top' });
-        cands.push({ ly: bottomClear, band: 'bottom' });
-
-        for (const c of cands) {
-          const cx = lx;
-          const cy = Math.max(0, Math.min(c.ly, canvas.height - LABEL_HEIGHT));
-          if (cx < 0 || cx + lw > canvas.width + 1) continue;
-          if (!overlapsAnyBox(cx, cy, lw, LABEL_HEIGHT) && !overlapsAnyLabel(cx, cy, lw, LABEL_HEIGHT)) {
-            chosen = { x: cx, y: cy };
-            break;
-          }
-        }
-
-        if (!chosen) {
-          chosen = { x: lx, y: Math.max(0, canvas.height - LABEL_HEIGHT) };
-        }
-
-        const lxr = Math.max(0, Math.min(chosen.x, canvas.width - lw));
-        const lyr = Math.max(0, Math.min(chosen.y, canvas.height - LABEL_HEIGHT));
-
-        placed.push({ x: lxr, y: lyr, w: lw, h: LABEL_HEIGHT });
-
-        // Calculate final label rect
-        const lrx = lxr;
-        const lry = lyr;
-        const lrw = lw;
-        const lrh = LABEL_HEIGHT;
-
-        // Draw connector line: short direct line from label to nearest box edge
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (lry + lrh <= by) {
-          // label above box: connect label bottom edge to box top edge,
-          // keeping x within whichever horizontal span the line crosses
-          const nearX = Math.max(bx, Math.min(lrx + lrw, bx + bw));
-          const midX = (lrx + lrw / 2 + nearX) / 2;
-          ctx.moveTo(midX, lry + lrh);
-          ctx.lineTo(nearX, by);
-        } else {
-          // label below box: connect label top edge to box bottom edge
-          const nearX = Math.max(bx, Math.min(lrx + lrw, bx + bw));
-          const midX = (lrx + lrw / 2 + nearX) / 2;
-          ctx.moveTo(midX, lry);
-          ctx.lineTo(nearX, by + bh);
-        }
-        ctx.stroke();
-
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(lrx, lry, lrw, lrh);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(text, lrx + LABEL_PAD, lry + LABEL_HEIGHT - 6);
       });
     };
 
