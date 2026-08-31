@@ -28,30 +28,73 @@ export default function ResultsView({ imageUrl, detections, loading }) {
       const scaleX = width / naturalWidth;
       const scaleY = height / naturalHeight;
 
-      detections.forEach(det => {
+      const LABEL_HEIGHT = 22;
+      const LABEL_PADDING_X = 6;
+      const LABEL_GAP = 3;
+      const FONT_SIZE = 13;
+
+      const prepared = detections.map(det => {
         const [x1, y1, x2, y2] = det.box;
-        
         const scaledX = x1 * scaleX;
         const scaledY = y1 * scaleY;
         const scaledW = (x2 - x1) * scaleX;
         const scaledH = (y2 - y1) * scaleY;
-        
-        // Draw box
-        ctx.strokeStyle = '#ef4444'; // accent-500
+        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
+        ctx.font = `bold ${FONT_SIZE}px sans-serif`;
+        const textWidth = ctx.measureText(text).width;
+        const labelW = textWidth + LABEL_PADDING_X * 2;
+        return { scaledX, scaledY, scaledW, scaledH, text, textWidth, labelW };
+      });
+
+      const placed = [];
+
+      prepared.forEach(p => {
+        const { scaledX, scaledY, scaledW, scaledH, text, textWidth, labelW } = p;
+
+        ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
         ctx.strokeRect(scaledX, scaledY, scaledW, scaledH);
-        
-        // Draw label background
+
+        ctx.font = `bold ${FONT_SIZE}px sans-serif`;
+
+        let labelX = scaledX;
+        let labelY = scaledY - LABEL_HEIGHT;
+
+        if (labelY < 0) {
+          labelY = scaledY + scaledH + 3;
+        }
+
+        let attempts = 0;
+        while (attempts < 20) {
+          const overlaps = placed.some(other => {
+            return (
+              labelX < other.x + other.w + LABEL_GAP &&
+              labelX + labelW + LABEL_GAP > other.x &&
+              labelY < other.y + other.h &&
+              labelY + LABEL_HEIGHT > other.y
+            );
+          });
+
+          if (!overlaps) break;
+
+          labelY += LABEL_HEIGHT + LABEL_GAP;
+          if (labelY + LABEL_HEIGHT > canvas.height) {
+            labelX += 8;
+            labelY = scaledY - LABEL_HEIGHT;
+          }
+          attempts++;
+        }
+
+        const clampedX = Math.max(0, Math.min(labelX, canvas.width - labelW));
+        const clampedY = Math.max(0, Math.min(labelY, canvas.height - LABEL_HEIGHT));
+
+        placed.push({ x: clampedX, y: clampedY, w: labelW, h: LABEL_HEIGHT });
+
         ctx.fillStyle = '#ef4444';
-        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
-        ctx.font = 'bold 14px sans-serif';
-        const textWidth = ctx.measureText(text).width;
-        
-        ctx.fillRect(scaledX, scaledY - 25, textWidth + 10, 25);
-        
-        // Draw text
+        ctx.fillRect(clampedX, clampedY, labelW, LABEL_HEIGHT);
+
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(text, scaledX + 5, scaledY - 7);
+        ctx.fillText(text, clampedX + LABEL_PADDING_X, clampedY + LABEL_HEIGHT - 6);
       });
     };
 
