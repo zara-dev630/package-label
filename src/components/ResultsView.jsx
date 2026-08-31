@@ -28,73 +28,58 @@ export default function ResultsView({ imageUrl, detections, loading }) {
       const scaleX = width / naturalWidth;
       const scaleY = height / naturalHeight;
 
-      const LABEL_HEIGHT = 22;
-      const LABEL_PADDING_X = 6;
-      const LABEL_GAP = 3;
-      const FONT_SIZE = 13;
-
-      const prepared = detections.map(det => {
-        const [x1, y1, x2, y2] = det.box;
-        const scaledX = x1 * scaleX;
-        const scaledY = y1 * scaleY;
-        const scaledW = (x2 - x1) * scaleX;
-        const scaledH = (y2 - y1) * scaleY;
-        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
-        ctx.font = `bold ${FONT_SIZE}px sans-serif`;
-        const textWidth = ctx.measureText(text).width;
-        const labelW = textWidth + LABEL_PADDING_X * 2;
-        return { scaledX, scaledY, scaledW, scaledH, text, textWidth, labelW };
-      });
+      const LABEL_HEIGHT = 24;
+      const LABEL_PAD = 6;
 
       const placed = [];
 
-      prepared.forEach(p => {
-        const { scaledX, scaledY, scaledW, scaledH, text, textWidth, labelW } = p;
+      detections.forEach(det => {
+        const [x1, y1, x2, y2] = det.box;
+        const bx = x1 * scaleX;
+        const by = y1 * scaleY;
+        const bw = (x2 - x1) * scaleX;
+        const bh = (y2 - y1) * scaleY;
 
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
-        ctx.strokeRect(scaledX, scaledY, scaledW, scaledH);
+        ctx.strokeRect(bx, by, bw, bh);
 
-        ctx.font = `bold ${FONT_SIZE}px sans-serif`;
+        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
+        ctx.font = 'bold 14px sans-serif';
+        const tw = ctx.measureText(text).width;
+        const lw = tw + LABEL_PAD * 2;
 
-        let labelX = scaledX;
-        let labelY = scaledY - LABEL_HEIGHT;
+        let lx = bx;
+        let ly = by - LABEL_HEIGHT;
 
-        if (labelY < 0) {
-          labelY = scaledY + scaledH + 3;
-        }
+        if (ly < 0) ly = by + bh + 3;
 
-        let attempts = 0;
-        while (attempts < 20) {
-          const overlaps = placed.some(other => {
-            return (
-              labelX < other.x + other.w + LABEL_GAP &&
-              labelX + labelW + LABEL_GAP > other.x &&
-              labelY < other.y + other.h &&
-              labelY + LABEL_HEIGHT > other.y
-            );
-          });
-
-          if (!overlaps) break;
-
-          labelY += LABEL_HEIGHT + LABEL_GAP;
-          if (labelY + LABEL_HEIGHT > canvas.height) {
-            labelX += 8;
-            labelY = scaledY - LABEL_HEIGHT;
+        for (let i = 0; i < placed.length; i++) {
+          const o = placed[i];
+          const overlaps =
+            lx < o.x + o.w + 2 &&
+            lx + lw + 2 > o.x &&
+            ly < o.y + o.h &&
+            ly + LABEL_HEIGHT > o.y;
+          if (overlaps) {
+            ly = o.y + o.h + 2;
           }
-          attempts++;
         }
 
-        const clampedX = Math.max(0, Math.min(labelX, canvas.width - labelW));
-        const clampedY = Math.max(0, Math.min(labelY, canvas.height - LABEL_HEIGHT));
+        if (ly + LABEL_HEIGHT > by && ly < by + bh) {
+          ly = by + bh + 3;
+        }
 
-        placed.push({ x: clampedX, y: clampedY, w: labelW, h: LABEL_HEIGHT });
+        lx = Math.max(0, Math.min(lx, canvas.width - lw));
+        ly = Math.max(0, Math.min(ly, canvas.height - LABEL_HEIGHT));
+
+        placed.push({ x: lx, y: ly, w: lw, h: LABEL_HEIGHT });
 
         ctx.fillStyle = '#ef4444';
-        ctx.fillRect(clampedX, clampedY, labelW, LABEL_HEIGHT);
+        ctx.fillRect(lx, ly, lw, LABEL_HEIGHT);
 
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(text, clampedX + LABEL_PADDING_X, clampedY + LABEL_HEIGHT - 6);
+        ctx.fillText(text, lx + LABEL_PAD, ly + LABEL_HEIGHT - 6);
       });
     };
 
