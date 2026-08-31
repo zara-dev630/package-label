@@ -110,20 +110,23 @@ export default function ResultsView({ imageUrl, detections, loading }) {
         const lrw = lw;
         const lrh = LABEL_HEIGHT;
 
-        // Draw connector line: from label edge to box edge
+        // Draw connector line: short direct line from label to nearest box edge
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         if (lry + lrh <= by) {
-          // above box: line from label bottom center to box top center
-          const cx = lrx + lrw / 2;
-          ctx.moveTo(cx, lry + lrh);
-          ctx.lineTo(bx + bw / 2, by);
+          // label above box: connect label bottom edge to box top edge,
+          // keeping x within whichever horizontal span the line crosses
+          const nearX = Math.max(bx, Math.min(lrx + lrw, bx + bw));
+          const midX = (lrx + lrw / 2 + nearX) / 2;
+          ctx.moveTo(midX, lry + lrh);
+          ctx.lineTo(nearX, by);
         } else {
-          // below box: line from label top center to box bottom center
-          const cx = lrx + lrw / 2;
-          ctx.moveTo(cx, lry);
-          ctx.lineTo(bx + bw / 2, by + bh);
+          // label below box: connect label top edge to box bottom edge
+          const nearX = Math.max(bx, Math.min(lrx + lrw, bx + bw));
+          const midX = (lrx + lrw / 2 + nearX) / 2;
+          ctx.moveTo(midX, lry);
+          ctx.lineTo(nearX, by + bh);
         }
         ctx.stroke();
 
