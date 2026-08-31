@@ -30,66 +30,108 @@ export default function ResultsView({ imageUrl, detections, loading }) {
 
       const LABEL_HEIGHT = 24;
       const LABEL_PAD = 6;
+      const GAP = 6;
 
-      const placed = [];
-
-      detections.forEach(det => {
+      const boxes = detections.map(det => {
         const [x1, y1, x2, y2] = det.box;
         const bx = x1 * scaleX;
         const by = y1 * scaleY;
         const bw = (x2 - x1) * scaleX;
         const bh = (y2 - y1) * scaleY;
+        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
+        ctx.font = 'bold 14px sans-serif';
+        const tw = ctx.measureText(text).width;
+        const lw = tw + LABEL_PAD * 2;
+        return { bx, by, bw, bh, text, lw };
+      });
+
+      const placed = [];
+
+      const overlapsAnyBox = (x, y, w, h) =>
+        boxes.some(b =>
+          x < b.bx + b.bw && x + w > b.bx &&
+          y < b.by + b.bh && y + h > b.by
+        );
+
+      const overlapsAnyLabel = (x, y, w, h) =>
+        placed.some(o =>
+          x < o.x + o.w + LABEL_PAD && x + w + LABEL_PAD > o.x &&
+          y < o.y + o.h && y + LABEL_HEIGHT > o.y
+        );
+
+      boxes.forEach(b => {
+        const { bx, by, bw, bh, text, lw } = b;
 
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
         ctx.strokeRect(bx, by, bw, bh);
 
-        const text = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
-        ctx.font = 'bold 14px sans-serif';
-        const tw = ctx.measureText(text).width;
-        const lw = tw + LABEL_PAD * 2;
-
         let lx = bx;
-        let ly = by - LABEL_HEIGHT - 3;
+        let ly;
+        let chosen = null;
 
-        if (ly < 0) {
-          ly = by + bh + 3;
+        const cands = [
+          { ly: by - LABEL_HEIGHT - GAP },
+          { ly: by + bh + GAP },
+        ];
+        // Also try sliding within the gap above/below, plus global clear bands
+        for (let n = 1; n <= 6; n++) {
+          cands.push({ ly: by - GAP - LABEL_HEIGHT - n * (LABEL_HEIGHT + 2), offset: -n });
+          cands.push({ ly: by + bh + GAP + n * (LABEL_HEIGHT + 2), offset: n });
+        }
+        // Global cleared bands: stack in the top clear zone or bottom clear zone
+        const topClear = 0;
+        const bottomClear = canvas.height - LABEL_HEIGHT * boxes.length;
+        cands.push({ ly: topClear, band: 'top' });
+        cands.push({ ly: bottomClear, band: 'bottom' });
+
+        for (const c of cands) {
+          const cx = lx;
+          const cy = Math.max(0, Math.min(c.ly, canvas.height - LABEL_HEIGHT));
+          if (cx < 0 || cx + lw > canvas.width + 1) continue;
+          if (!overlapsAnyBox(cx, cy, lw, LABEL_HEIGHT) && !overlapsAnyLabel(cx, cy, lw, LABEL_HEIGHT)) {
+            chosen = { x: cx, y: cy };
+            break;
+          }
         }
 
-        for (let iter = 0; iter < 20; iter++) {
-          let moved = false;
-
-          if (ly + LABEL_HEIGHT > by && ly < by + bh + 1) {
-            ly = by + bh + 3;
-            moved = true;
-          }
-
-          for (let i = 0; i < placed.length; i++) {
-            const o = placed[i];
-            if (
-              lx < o.x + o.w + 2 &&
-              lx + lw + 2 > o.x &&
-              ly < o.y + o.h &&
-              ly + LABEL_HEIGHT > o.y
-            ) {
-              ly = o.y + o.h + 2;
-              moved = true;
-            }
-          }
-
-          if (!moved) break;
+        if (!chosen) {
+          chosen = { x: lx, y: Math.max(0, canvas.height - LABEL_HEIGHT) };
         }
 
-        lx = Math.max(0, Math.min(lx, canvas.width - lw));
-        ly = Math.max(0, Math.min(ly, canvas.height - LABEL_HEIGHT));
+        const lxr = Math.max(0, Math.min(chosen.x, canvas.width - lw));
+        const lyr = Math.max(0, Math.min(chosen.y, canvas.height - LABEL_HEIGHT));
 
-        placed.push({ x: lx, y: ly, w: lw, h: LABEL_HEIGHT });
+        placed.push({ x: lxr, y: lyr, w: lw, h: LABEL_HEIGHT });
+
+        // Calculate final label rect
+        const lrx = lxr;
+        const lry = lyr;
+        const lrw = lw;
+        const lrh = LABEL_HEIGHT;
+
+        // Draw connector line: from label edge to box edge
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (lry + lrh <= by) {
+          // above box: line from label bottom center to box top center
+          const cx = lrx + lrw / 2;
+          ctx.moveTo(cx, lry + lrh);
+          ctx.lineTo(bx + bw / 2, by);
+        } else {
+          // below box: line from label top center to box bottom center
+          const cx = lrx + lrw / 2;
+          ctx.moveTo(cx, lry);
+          ctx.lineTo(bx + bw / 2, by + bh);
+        }
+        ctx.stroke();
 
         ctx.fillStyle = '#ef4444';
-        ctx.fillRect(lx, ly, lw, LABEL_HEIGHT);
+        ctx.fillRect(lrx, lry, lrw, lrh);
 
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(text, lx + LABEL_PAD, ly + LABEL_HEIGHT - 6);
+        ctx.fillText(text, lrx + LABEL_PAD, lry + LABEL_HEIGHT - 6);
       });
     };
 
